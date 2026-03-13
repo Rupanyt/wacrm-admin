@@ -38,6 +38,6 @@ function clean_input($data) {
 
 date_default_timezone_set("Asia/Kolkata");
 
-$base_url = "http://store.geniusdevel.com/"; 
+$base_url = "https://crm.waclick.in/"; 
 
 ?>
