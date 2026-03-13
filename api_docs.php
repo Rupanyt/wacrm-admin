@@ -494,6 +494,7 @@ $error_calls  = $conn->query("SELECT COUNT(*) FROM api_logs WHERE user_id='$user
         <?php endforeach; ?>
 
         <!-- Cron Setup -->
+          <?php if (in_array($role, ['super_admin', 'admin'])): ?>
         <div id="cron" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
             <h2 class="font-black text-gray-800 mb-1 flex items-center gap-2"><i class="fas fa-clock text-purple-500"></i> Cron Job Setup</h2>
             <p class="text-sm text-gray-500 mb-4">Set up a cron job to automatically clean old API logs. Error logs are deleted after 30 days, success logs after 60 days.</p>
