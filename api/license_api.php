@@ -18,6 +18,37 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $action = isset($_POST['action']) ? $_POST['action'] : '';
 
 if ($action == 'save_license') {
+
+    // ── RESELLER PLAN ENFORCEMENT ──────────────────────────────────────
+    if ($my_role === 'reseller') {
+        $reseller = $conn->query("
+            SELECT u.plan_id, u.plan_expiry, u.extra_licenses,
+                   rp.license_limit, rp.plan_name
+            FROM users u
+            LEFT JOIN reseller_plans rp ON u.plan_id = rp.id
+            WHERE u.id = '$my_id'
+        ")->fetch_assoc();
+
+        if (empty($reseller['plan_id'])) {
+            echo json_encode(['status' => 'error', 'message' => 'You do not have an active plan. Please subscribe to a plan before generating licenses.', 'redirect' => 'reseller_plan']);
+            exit;
+        }
+
+        if (!empty($reseller['plan_expiry']) && date('Y-m-d') > $reseller['plan_expiry']) {
+            echo json_encode(['status' => 'error', 'message' => 'Your plan "' . $reseller['plan_name'] . '" has expired. Please renew to continue generating licenses.', 'redirect' => 'reseller_plan']);
+            exit;
+        }
+
+        $used  = (int)$conn->query("SELECT COUNT(*) FROM licenses WHERE created_by='$my_id'")->fetch_row()[0];
+        $limit = ((int)($reseller['license_limit'] ?? 0)) + ((int)($reseller['extra_licenses'] ?? 0));
+
+        if ($used >= $limit) {
+            echo json_encode(['status' => 'error', 'message' => 'Quota reached! You have used ' . $used . ' of ' . $limit . ' licenses. Buy extra licenses or upgrade your plan.', 'redirect' => 'reseller_plan']);
+            exit;
+        }
+    }
+    // ──────────────────────────────────────────────────────────────────
+
     $software = clean_input($_POST['software_name']);
     $client   = clean_input($_POST['client_name']);
     $mobile   = clean_input($_POST['client_mobile']);
