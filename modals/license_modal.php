@@ -45,13 +45,22 @@ $('#licenseForm').on('submit', function(e) {
         data: $(this).serialize(),
         dataType: 'json',
         success: function(res) {
-            if(res.status === 'success') {
+            if (res.status === 'success') {
                 showToast(res.message, 'success');
+                closeModal();
                 setTimeout(() => { location.reload(); }, 2000);
             } else {
                 showToast(res.message, 'error');
                 btn.prop('disabled', false).html('Generate License Key');
+                if (res.redirect) {
+                    closeModal();
+                    setTimeout(() => { window.location.href = res.redirect; }, 2500);
+                }
             }
+        },
+        error: function() {
+            showToast('Server error occurred.', 'error');
+            btn.prop('disabled', false).html('Generate License Key');
         }
     });
 });
