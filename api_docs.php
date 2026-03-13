@@ -202,8 +202,11 @@ $error_calls  = $conn->query("SELECT COUNT(*) FROM api_logs WHERE user_id='$user
                     ['#update',     'fas fa-edit',        'Update License'],
                     ['#toggle',     'fas fa-toggle-on',   'Toggle Status'],
                     ['#delete',     'fas fa-trash',       'Delete License'],
-                    ['#cron',       'fas fa-clock',       'Cron Setup'],
+                    
                 ];
+ if (in_array($role, ['super_admin', 'admin'])) {
+                    $nav[] = ['#cron', 'fas fa-clock', 'Cron Setup'];
+                }
                 foreach ($nav as [$href, $ico, $label]):
                 ?>
                 <a href="<?= $href ?>" class="flex items-center gap-2 px-3 py-2 rounded-lg text-gray-600 hover:bg-indigo-50 hover:text-indigo-700 transition-all">
@@ -505,6 +508,7 @@ $error_calls  = $conn->query("SELECT COUNT(*) FROM api_logs WHERE user_id='$user
             </div>
             <p class="text-[11px] text-gray-400">Add this to your crontab via <code class="bg-gray-100 px-1 rounded">crontab -e</code>. Or add it in your hosting control panel's Cron Jobs section.</p>
         </div>
+        <?php endif; ?>
 
     </div><!-- end docs content -->
 </div><!-- end grid -->
