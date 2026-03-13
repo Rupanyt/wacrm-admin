@@ -2,7 +2,46 @@
 $current_page = basename($_SERVER['PHP_SELF'], ".php");
 
 function isActive($pageName, $current_page) {
-    return ($pageName == $current_page) ? 'active-link-white' : 'hover:bg-'.get_config('theme_color').'-50 text-gray-600 hover:text-'.get_config('theme_color').'-700';
+    return ($pageName == $current_page)
+        ? 'active-link-white'
+        : 'hover:bg-'.get_config('theme_color').'-50 text-gray-600 hover:text-'.get_config('theme_color').'-700';
+}
+
+// Safe role/username fallback
+$role     = $role     ?? $_SESSION['role']     ?? '';
+$username = $username ?? $_SESSION['username'] ?? '';
+$user_id  = $user_id  ?? $_SESSION['user_id']  ?? 0;
+
+// Pending payments badge (admin/super_admin)
+$pending_payments = 0;
+if (in_array($role, ['super_admin', 'admin'])) {
+    $where = ($role === 'admin')
+        ? "WHERE reseller_id IN (SELECT id FROM users WHERE parent_id='$user_id' AND role='reseller') AND payment_status='pending'"
+        : "WHERE payment_status='pending'";
+    $r = $conn->query("SELECT COUNT(*) FROM payments $where");
+    if ($r) $pending_payments = (int)$r->fetch_row()[0];
+}
+
+// Reseller plan expiry badge
+$plan_badge      = '';
+$plan_badge_cls  = '';
+if ($role === 'reseller') {
+    $rd = $conn->query("SELECT u.plan_id, u.plan_expiry, rp.license_limit, u.extra_licenses
+                        FROM users u LEFT JOIN reseller_plans rp ON u.plan_id=rp.id
+                        WHERE u.id='$user_id'")->fetch_assoc();
+    if (empty($rd['plan_id'])) {
+        $plan_badge     = 'No Plan';
+        $plan_badge_cls = 'bg-red-100 text-red-600';
+    } elseif (!empty($rd['plan_expiry']) && date('Y-m-d') > $rd['plan_expiry']) {
+        $plan_badge     = 'Expired';
+        $plan_badge_cls = 'bg-red-100 text-red-600';
+    } elseif (!empty($rd['plan_expiry'])) {
+        $days = (int)ceil((strtotime($rd['plan_expiry']) - time()) / 86400);
+        if ($days <= 7) {
+            $plan_badge     = $days.'d left';
+            $plan_badge_cls = 'bg-orange-100 text-orange-600';
+        }
+    }
 }
 ?>
 
@@ -12,14 +51,14 @@ function isActive($pageName, $current_page) {
         <div id="fullLogo" class="flex items-center justify-center transition-opacity duration-300 w-full px-2">
             <a href="dashboard" class="block">
                 <img src="<?= get_config('rect_logo_path'); ?>"
-                    alt="<?php echo get_config('site_name'); ?>"
+                    alt="<?= get_config('site_name'); ?>"
                     class="h-12 w-auto object-contain max-w-full"
                     onerror="">
             </a>
         </div>
         <div id="circleLogo" class="hidden transition-opacity duration-300">
             <div class="w-12 h-12 bg-white rounded-full shadow-md border border-gray-100 flex items-center justify-center">
-                 <img src="assets/icon-circle.png" alt="Icon" class="w-8 h-8 object-contain">
+                <img src="assets/icon-circle.png" alt="Icon" class="w-8 h-8 object-contain">
             </div>
         </div>
     </div>
@@ -28,80 +67,112 @@ function isActive($pageName, $current_page) {
         <i id="collapseIcon" class="fas fa-chevron-left"></i>
     </button>
 
-    <nav class="flex-1 mt-6 px-3 space-y-1 overflow-y-auto">
+    <nav class="flex-1 mt-4 px-3 space-y-0.5 overflow-y-auto">
 
-        <a href="dashboard" class="nav-item py-3 px-4 rounded-xl <?php echo isActive('dashboard', $current_page); ?>" title="Dashboard">
+        <!-- Dashboard -->
+        <a href="dashboard" class="nav-item py-3 px-4 rounded-xl <?= isActive('dashboard', $current_page); ?>" title="Dashboard">
             <i class="fas fa-th-large w-6 text-center text-sm"></i>
             <span class="nav-text ml-3 text-sm font-medium">Dashboard</span>
         </a>
 
-        <?php if ($role == 'super_admin'): ?>
-        <a href="admins" class="nav-item py-3 px-4 rounded-xl <?php echo isActive('admins', $current_page); ?>" title="Manage Admins">
+        <!-- ── SUPER ADMIN ONLY ──────────────────────────── -->
+        <?php if ($role === 'super_admin'): ?>
+        <a href="admins" class="nav-item py-3 px-4 rounded-xl <?= isActive('admins', $current_page); ?>" title="Manage Admins">
             <i class="fas fa-user-shield w-6 text-center text-sm"></i>
             <span class="nav-text ml-3 text-sm font-medium">Manage Admins</span>
         </a>
         <?php endif; ?>
 
-        <?php if ($role == 'super_admin' || $role == 'admin'): ?>
-        <a href="resellers" class="nav-item py-3 px-4 rounded-xl <?php echo isActive('resellers', $current_page); ?>" title="Manage Resellers">
+        <!-- ── ADMIN + SUPER ADMIN ───────────────────────── -->
+        <?php if (in_array($role, ['super_admin', 'admin'])): ?>
+
+        <a href="resellers" class="nav-item py-3 px-4 rounded-xl <?= isActive('resellers', $current_page); ?>" title="Manage Resellers">
             <i class="fas fa-users w-6 text-center text-sm"></i>
             <span class="nav-text ml-3 text-sm font-medium">Manage Resellers</span>
         </a>
 
-        <!-- ── Billing Section (Admin) ── -->
-        <div class="pt-3 pb-1 px-4">
-            <p class="nav-text text-[9px] font-black text-gray-300 uppercase tracking-widest">Billing</p>
-        </div>
-
-        <a href="plans" class="nav-item py-3 px-4 rounded-xl <?php echo isActive('plans', $current_page); ?>" title="Reseller Plans">
-            <i class="fas fa-boxes w-6 text-center text-sm"></i>
-            <span class="nav-text ml-3 text-sm font-medium">Plans</span>
-        </a>
-
-        <a href="payments" class="nav-item py-3 px-4 rounded-xl <?php echo isActive('payments', $current_page); ?>" title="Payments">
-            <i class="fas fa-receipt w-6 text-center text-sm"></i>
-            <span class="nav-text ml-3 text-sm font-medium">Payments</span>
-            <?php
-            // Badge for pending payments
-            $pending_cnt = $conn->query("SELECT COUNT(*) FROM payments WHERE payment_status='pending'")->fetch_row()[0];
-            if ($pending_cnt > 0): ?>
-            <span class="nav-text ml-auto bg-red-400 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full"><?= $pending_cnt ?></span>
-            <?php endif; ?>
-        </a>
-        <?php endif; ?>
-
-        <a href="licenses" class="nav-item py-3 px-4 rounded-xl <?php echo isActive('licenses', $current_page); ?>" title="Licenses">
+        <a href="licenses" class="nav-item py-3 px-4 rounded-xl <?= isActive('licenses', $current_page); ?>" title="Licenses">
             <i class="fas fa-key w-6 text-center text-sm"></i>
             <span class="nav-text ml-3 text-sm font-medium">Licenses</span>
         </a>
 
-        <?php if ($role == 'reseller'): ?>
-        <!-- ── Billing Section (Reseller) ── -->
-        <div class="pt-3 pb-1 px-4">
-            <p class="nav-text text-[9px] font-black text-gray-300 uppercase tracking-widest">Billing</p>
+        <!-- Billing section header -->
+        <div class="nav-text pt-3 pb-1 px-4">
+            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Billing</p>
         </div>
 
-        <a href="reseller_plan" class="nav-item py-3 px-4 rounded-xl <?php echo isActive('reseller_plan', $current_page); ?>" title="My Plan">
-            <i class="fas fa-id-badge w-6 text-center text-sm"></i>
-            <span class="nav-text ml-3 text-sm font-medium">My Plan</span>
-            <?php
-            // Badge: plan expiring soon or expired
-            $resel = $conn->query("SELECT plan_expiry FROM users WHERE id='$user_id'")->fetch_assoc();
-            if ($resel && $resel['plan_expiry']) {
-                $days = (strtotime($resel['plan_expiry']) - strtotime(date('Y-m-d'))) / 86400;
-                if ($days <= 0): ?>
-                <span class="nav-text ml-auto bg-red-400 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">Expired</span>
-                <?php elseif ($days <= 7): ?>
-                <span class="nav-text ml-auto bg-orange-400 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full"><?= round($days) ?>d</span>
-                <?php endif;
-            } ?>
+        <a href="plans" class="nav-item py-3 px-4 rounded-xl <?= isActive('plans', $current_page); ?>" title="Reseller Plans">
+            <i class="fas fa-boxes w-6 text-center text-sm"></i>
+            <span class="nav-text ml-3 text-sm font-medium">Reseller Plans</span>
         </a>
+
+        <a href="payments" class="nav-item py-3 px-4 rounded-xl <?= isActive('payments', $current_page); ?>" title="Payments">
+            <i class="fas fa-receipt w-6 text-center text-sm"></i>
+            <span class="nav-text ml-3 text-sm font-medium flex items-center gap-2">
+                Payments
+                <?php if ($pending_payments > 0): ?>
+                <span class="ml-auto bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full min-w-[18px] text-center"><?= $pending_payments ?></span>
+                <?php endif; ?>
+            </span>
+        </a>
+
+        <!-- Extension section header -->
+        <div class="nav-text pt-3 pb-1 px-4">
+            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Extension</p>
+        </div>
+
+        <a href="extension_versions" class="nav-item py-3 px-4 rounded-xl <?= isActive('extension_versions', $current_page); ?>" title="Extension Versions">
+            <i class="fas fa-puzzle-piece w-6 text-center text-sm"></i>
+            <span class="nav-text ml-3 text-sm font-medium">Ext. Versions</span>
+        </a>
+
         <?php endif; ?>
 
-        <a href="setting" class="nav-item py-3 px-4 rounded-xl <?php echo isActive('setting', $current_page); ?>" title="Settings">
+        <!-- ── RESELLER ONLY ─────────────────────────────── -->
+        <?php if ($role === 'reseller'): ?>
+
+        <a href="licenses" class="nav-item py-3 px-4 rounded-xl <?= isActive('licenses', $current_page); ?>" title="My Licenses">
+            <i class="fas fa-key w-6 text-center text-sm"></i>
+            <span class="nav-text ml-3 text-sm font-medium">My Licenses</span>
+        </a>
+
+        <!-- Plan & Billing section header -->
+        <div class="nav-text pt-3 pb-1 px-4">
+            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Plan & Billing</p>
+        </div>
+
+        <a href="reseller_plan" class="nav-item py-3 px-4 rounded-xl <?= isActive('reseller_plan', $current_page); ?>" title="My Plan">
+            <i class="fas fa-id-badge w-6 text-center text-sm"></i>
+            <span class="nav-text ml-3 text-sm font-medium flex items-center gap-2">
+                My Plan
+                <?php if ($plan_badge): ?>
+                <span class="ml-auto <?= $plan_badge_cls ?> text-[9px] font-black px-1.5 py-0.5 rounded-full"><?= $plan_badge ?></span>
+                <?php endif; ?>
+            </span>
+        </a>
+
+        <!-- Extension section header -->
+        <div class="nav-text pt-3 pb-1 px-4">
+            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Extension</p>
+        </div>
+
+        <a href="extension" class="nav-item py-3 px-4 rounded-xl <?= isActive('extension', $current_page); ?>" title="My Extension">
+            <i class="fas fa-puzzle-piece w-6 text-center text-sm"></i>
+            <span class="nav-text ml-3 text-sm font-medium">My Extension</span>
+        </a>
+
+        <?php endif; ?>
+
+        <!-- ── ALL ROLES ──────────────────────────────────── -->
+        <div class="nav-text pt-3 pb-1 px-4">
+            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Account</p>
+        </div>
+
+        <a href="setting" class="nav-item py-3 px-4 rounded-xl <?= isActive('setting', $current_page); ?>" title="Settings">
             <i class="fas fa-cog w-6 text-center text-sm"></i>
             <span class="nav-text ml-3 text-sm font-medium">Settings</span>
         </a>
+
     </nav>
 
     <div class="p-4 border-t border-gray-50">
