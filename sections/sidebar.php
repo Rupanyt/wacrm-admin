@@ -1,6 +1,5 @@
 <?php
-$current_page = basename($_SERVER['PHP_SELF'], ".php"); 
-
+$current_page = basename($_SERVER['PHP_SELF'], ".php");
 
 function isActive($pageName, $current_page) {
     return ($pageName == $current_page) ? 'active-link-white' : 'hover:bg-'.get_config('theme_color').'-50 text-gray-600 hover:text-'.get_config('theme_color').'-700';
@@ -8,12 +7,12 @@ function isActive($pageName, $current_page) {
 ?>
 
 <aside id="sidebar" class="w-64 bg-white border-r border-gray-100 flex-shrink-0 flex flex-col h-full transition-all duration-300 relative shadow-sm">
-    
+
     <div class="p-6 h-24 flex items-center justify-center border-b border-gray-50 overflow-hidden">
         <div id="fullLogo" class="flex items-center justify-center transition-opacity duration-300 w-full px-2">
             <a href="dashboard" class="block">
-                <img src="<?= get_config('rect_logo_path'); ?>" 
-                    alt="<?php echo get_config('site_name'); ?>" 
+                <img src="<?= get_config('rect_logo_path'); ?>"
+                    alt="<?php echo get_config('site_name'); ?>"
                     class="h-12 w-auto object-contain max-w-full"
                     onerror="">
             </a>
@@ -28,24 +27,46 @@ function isActive($pageName, $current_page) {
     <button onclick="toggleSidebar()" class="absolute -right-3 top-10 w-6 h-6 bg-white border border-gray-200 rounded-full flex items-center justify-center text-[10px] text-gray-400 hover:text-<?= get_config('theme_color'); ?>-600 shadow-sm z-50">
         <i id="collapseIcon" class="fas fa-chevron-left"></i>
     </button>
-    
-    <nav class="flex-1 mt-6 px-3 space-y-2">
+
+    <nav class="flex-1 mt-6 px-3 space-y-1 overflow-y-auto">
+
         <a href="dashboard" class="nav-item py-3 px-4 rounded-xl <?php echo isActive('dashboard', $current_page); ?>" title="Dashboard">
             <i class="fas fa-th-large w-6 text-center text-sm"></i>
             <span class="nav-text ml-3 text-sm font-medium">Dashboard</span>
         </a>
 
-        <?php if($role == 'super_admin'): ?>
+        <?php if ($role == 'super_admin'): ?>
         <a href="admins" class="nav-item py-3 px-4 rounded-xl <?php echo isActive('admins', $current_page); ?>" title="Manage Admins">
             <i class="fas fa-user-shield w-6 text-center text-sm"></i>
             <span class="nav-text ml-3 text-sm font-medium">Manage Admins</span>
         </a>
         <?php endif; ?>
 
-        <?php if($role == 'super_admin' || $role == 'admin'): ?>
+        <?php if ($role == 'super_admin' || $role == 'admin'): ?>
         <a href="resellers" class="nav-item py-3 px-4 rounded-xl <?php echo isActive('resellers', $current_page); ?>" title="Manage Resellers">
             <i class="fas fa-users w-6 text-center text-sm"></i>
             <span class="nav-text ml-3 text-sm font-medium">Manage Resellers</span>
+        </a>
+
+        <!-- ── Billing Section (Admin) ── -->
+        <div class="pt-3 pb-1 px-4">
+            <p class="nav-text text-[9px] font-black text-gray-300 uppercase tracking-widest">Billing</p>
+        </div>
+
+        <a href="plans" class="nav-item py-3 px-4 rounded-xl <?php echo isActive('plans', $current_page); ?>" title="Reseller Plans">
+            <i class="fas fa-boxes w-6 text-center text-sm"></i>
+            <span class="nav-text ml-3 text-sm font-medium">Plans</span>
+        </a>
+
+        <a href="payments" class="nav-item py-3 px-4 rounded-xl <?php echo isActive('payments', $current_page); ?>" title="Payments">
+            <i class="fas fa-receipt w-6 text-center text-sm"></i>
+            <span class="nav-text ml-3 text-sm font-medium">Payments</span>
+            <?php
+            // Badge for pending payments
+            $pending_cnt = $conn->query("SELECT COUNT(*) FROM payments WHERE payment_status='pending'")->fetch_row()[0];
+            if ($pending_cnt > 0): ?>
+            <span class="nav-text ml-auto bg-red-400 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full"><?= $pending_cnt ?></span>
+            <?php endif; ?>
         </a>
         <?php endif; ?>
 
@@ -53,6 +74,29 @@ function isActive($pageName, $current_page) {
             <i class="fas fa-key w-6 text-center text-sm"></i>
             <span class="nav-text ml-3 text-sm font-medium">Licenses</span>
         </a>
+
+        <?php if ($role == 'reseller'): ?>
+        <!-- ── Billing Section (Reseller) ── -->
+        <div class="pt-3 pb-1 px-4">
+            <p class="nav-text text-[9px] font-black text-gray-300 uppercase tracking-widest">Billing</p>
+        </div>
+
+        <a href="reseller_plan" class="nav-item py-3 px-4 rounded-xl <?php echo isActive('reseller_plan', $current_page); ?>" title="My Plan">
+            <i class="fas fa-id-badge w-6 text-center text-sm"></i>
+            <span class="nav-text ml-3 text-sm font-medium">My Plan</span>
+            <?php
+            // Badge: plan expiring soon or expired
+            $resel = $conn->query("SELECT plan_expiry FROM users WHERE id='$user_id'")->fetch_assoc();
+            if ($resel && $resel['plan_expiry']) {
+                $days = (strtotime($resel['plan_expiry']) - strtotime(date('Y-m-d'))) / 86400;
+                if ($days <= 0): ?>
+                <span class="nav-text ml-auto bg-red-400 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">Expired</span>
+                <?php elseif ($days <= 7): ?>
+                <span class="nav-text ml-auto bg-orange-400 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full"><?= round($days) ?>d</span>
+                <?php endif;
+            } ?>
+        </a>
+        <?php endif; ?>
 
         <a href="setting" class="nav-item py-3 px-4 rounded-xl <?php echo isActive('setting', $current_page); ?>" title="Settings">
             <i class="fas fa-cog w-6 text-center text-sm"></i>

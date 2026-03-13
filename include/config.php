@@ -4,9 +4,9 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 $host = "localhost";
-$user = "u326194193_gdcrm"; 
-$pass = "soXb&5FJ";   
-$dbname = "u326194193_gdcrm"; 
+$user = "root"; 
+$pass = "";   
+$dbname = "wacrm"; 
 
 $conn = new mysqli($host, $user, $pass, $dbname);
 
