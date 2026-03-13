@@ -7,7 +7,6 @@ function isActive($pageName, $current_page) {
         : 'hover:bg-'.get_config('theme_color').'-50 text-gray-600 hover:text-'.get_config('theme_color').'-700';
 }
 
-// Safe role/username fallback
 $role     = $role     ?? $_SESSION['role']     ?? '';
 $username = $username ?? $_SESSION['username'] ?? '';
 $user_id  = $user_id  ?? $_SESSION['user_id']  ?? 0;
@@ -23,11 +22,11 @@ if (in_array($role, ['super_admin', 'admin'])) {
 }
 
 // Reseller plan expiry badge
-$plan_badge      = '';
-$plan_badge_cls  = '';
+$plan_badge     = '';
+$plan_badge_cls = '';
 if ($role === 'reseller') {
     $rd = $conn->query("SELECT u.plan_id, u.plan_expiry, rp.license_limit, u.extra_licenses
-                        FROM users u LEFT JOIN reseller_plans rp ON u.plan_id=rp.id
+                        FROM users u LEFT JOIN reseller_plans rp ON u.plan_id = rp.id
                         WHERE u.id='$user_id'")->fetch_assoc();
     if (empty($rd['plan_id'])) {
         $plan_badge     = 'No Plan';
@@ -38,7 +37,7 @@ if ($role === 'reseller') {
     } elseif (!empty($rd['plan_expiry'])) {
         $days = (int)ceil((strtotime($rd['plan_expiry']) - time()) / 86400);
         if ($days <= 7) {
-            $plan_badge     = $days.'d left';
+            $plan_badge     = $days . 'd left';
             $plan_badge_cls = 'bg-orange-100 text-orange-600';
         }
     }
@@ -47,13 +46,14 @@ if ($role === 'reseller') {
 
 <aside id="sidebar" class="w-64 bg-white border-r border-gray-100 flex-shrink-0 flex flex-col h-full transition-all duration-300 relative shadow-sm">
 
+    <!-- Logo -->
     <div class="p-6 h-24 flex items-center justify-center border-b border-gray-50 overflow-hidden">
         <div id="fullLogo" class="flex items-center justify-center transition-opacity duration-300 w-full px-2">
             <a href="dashboard" class="block">
                 <img src="<?= get_config('rect_logo_path'); ?>"
-                    alt="<?= get_config('site_name'); ?>"
-                    class="h-12 w-auto object-contain max-w-full"
-                    onerror="">
+                     alt="<?= get_config('site_name'); ?>"
+                     class="h-12 w-auto object-contain max-w-full"
+                     onerror="">
             </a>
         </div>
         <div id="circleLogo" class="hidden transition-opacity duration-300">
@@ -63,27 +63,34 @@ if ($role === 'reseller') {
         </div>
     </div>
 
+    <!-- Collapse toggle -->
     <button onclick="toggleSidebar()" class="absolute -right-3 top-10 w-6 h-6 bg-white border border-gray-200 rounded-full flex items-center justify-center text-[10px] text-gray-400 hover:text-<?= get_config('theme_color'); ?>-600 shadow-sm z-50">
         <i id="collapseIcon" class="fas fa-chevron-left"></i>
     </button>
 
-    <nav class="flex-1 mt-4 px-3 space-y-0.5 overflow-y-auto">
+    <nav class="flex-1 mt-4 px-3 space-y-0.5 overflow-y-auto pb-4">
 
-        <!-- Dashboard -->
+        <!-- Dashboard — all roles -->
         <a href="dashboard" class="nav-item py-3 px-4 rounded-xl <?= isActive('dashboard', $current_page); ?>" title="Dashboard">
             <i class="fas fa-th-large w-6 text-center text-sm"></i>
             <span class="nav-text ml-3 text-sm font-medium">Dashboard</span>
         </a>
 
-        <!-- ── SUPER ADMIN ONLY ──────────────────────────── -->
+        <!-- ══════════════════════════════════════════════
+             SUPER ADMIN ONLY
+        ══════════════════════════════════════════════ -->
         <?php if ($role === 'super_admin'): ?>
+
         <a href="admins" class="nav-item py-3 px-4 rounded-xl <?= isActive('admins', $current_page); ?>" title="Manage Admins">
             <i class="fas fa-user-shield w-6 text-center text-sm"></i>
             <span class="nav-text ml-3 text-sm font-medium">Manage Admins</span>
         </a>
+
         <?php endif; ?>
 
-        <!-- ── ADMIN + SUPER ADMIN ───────────────────────── -->
+        <!-- ══════════════════════════════════════════════
+             ADMIN + SUPER ADMIN
+        ══════════════════════════════════════════════ -->
         <?php if (in_array($role, ['super_admin', 'admin'])): ?>
 
         <a href="resellers" class="nav-item py-3 px-4 rounded-xl <?= isActive('resellers', $current_page); ?>" title="Manage Resellers">
@@ -96,8 +103,8 @@ if ($role === 'reseller') {
             <span class="nav-text ml-3 text-sm font-medium">Licenses</span>
         </a>
 
-        <!-- Billing section header -->
-        <div class="nav-text pt-3 pb-1 px-4">
+        <!-- Billing -->
+        <div class="nav-text pt-4 pb-1 px-4">
             <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Billing</p>
         </div>
 
@@ -108,7 +115,7 @@ if ($role === 'reseller') {
 
         <a href="payments" class="nav-item py-3 px-4 rounded-xl <?= isActive('payments', $current_page); ?>" title="Payments">
             <i class="fas fa-receipt w-6 text-center text-sm"></i>
-            <span class="nav-text ml-3 text-sm font-medium flex items-center gap-2">
+            <span class="nav-text ml-3 text-sm font-medium flex-1 flex items-center">
                 Payments
                 <?php if ($pending_payments > 0): ?>
                 <span class="ml-auto bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full min-w-[18px] text-center"><?= $pending_payments ?></span>
@@ -116,8 +123,8 @@ if ($role === 'reseller') {
             </span>
         </a>
 
-        <!-- Extension section header -->
-        <div class="nav-text pt-3 pb-1 px-4">
+        <!-- Extension -->
+        <div class="nav-text pt-4 pb-1 px-4">
             <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Extension</p>
         </div>
 
@@ -126,9 +133,21 @@ if ($role === 'reseller') {
             <span class="nav-text ml-3 text-sm font-medium">Ext. Versions</span>
         </a>
 
+        <!-- Developer -->
+        <div class="nav-text pt-4 pb-1 px-4">
+            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Developer</p>
+        </div>
+
+        <a href="api_docs" class="nav-item py-3 px-4 rounded-xl <?= isActive('api_docs', $current_page); ?>" title="API Access">
+            <i class="fas fa-code w-6 text-center text-sm"></i>
+            <span class="nav-text ml-3 text-sm font-medium">API Access</span>
+        </a>
+
         <?php endif; ?>
 
-        <!-- ── RESELLER ONLY ─────────────────────────────── -->
+        <!-- ══════════════════════════════════════════════
+             RESELLER ONLY
+        ══════════════════════════════════════════════ -->
         <?php if ($role === 'reseller'): ?>
 
         <a href="licenses" class="nav-item py-3 px-4 rounded-xl <?= isActive('licenses', $current_page); ?>" title="My Licenses">
@@ -136,14 +155,14 @@ if ($role === 'reseller') {
             <span class="nav-text ml-3 text-sm font-medium">My Licenses</span>
         </a>
 
-        <!-- Plan & Billing section header -->
-        <div class="nav-text pt-3 pb-1 px-4">
+        <!-- Plan & Billing -->
+        <div class="nav-text pt-4 pb-1 px-4">
             <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Plan & Billing</p>
         </div>
 
         <a href="reseller_plan" class="nav-item py-3 px-4 rounded-xl <?= isActive('reseller_plan', $current_page); ?>" title="My Plan">
             <i class="fas fa-id-badge w-6 text-center text-sm"></i>
-            <span class="nav-text ml-3 text-sm font-medium flex items-center gap-2">
+            <span class="nav-text ml-3 text-sm font-medium flex-1 flex items-center">
                 My Plan
                 <?php if ($plan_badge): ?>
                 <span class="ml-auto <?= $plan_badge_cls ?> text-[9px] font-black px-1.5 py-0.5 rounded-full"><?= $plan_badge ?></span>
@@ -151,8 +170,8 @@ if ($role === 'reseller') {
             </span>
         </a>
 
-        <!-- Extension section header -->
-        <div class="nav-text pt-3 pb-1 px-4">
+        <!-- Extension -->
+        <div class="nav-text pt-4 pb-1 px-4">
             <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Extension</p>
         </div>
 
@@ -161,10 +180,22 @@ if ($role === 'reseller') {
             <span class="nav-text ml-3 text-sm font-medium">My Extension</span>
         </a>
 
+        <!-- Developer -->
+        <div class="nav-text pt-4 pb-1 px-4">
+            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Developer</p>
+        </div>
+
+        <a href="api_docs" class="nav-item py-3 px-4 rounded-xl <?= isActive('api_docs', $current_page); ?>" title="API Access">
+            <i class="fas fa-code w-6 text-center text-sm"></i>
+            <span class="nav-text ml-3 text-sm font-medium">API Access</span>
+        </a>
+
         <?php endif; ?>
 
-        <!-- ── ALL ROLES ──────────────────────────────────── -->
-        <div class="nav-text pt-3 pb-1 px-4">
+        <!-- ══════════════════════════════════════════════
+             ALL ROLES
+        ══════════════════════════════════════════════ -->
+        <div class="nav-text pt-4 pb-1 px-4">
             <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Account</p>
         </div>
 
@@ -175,10 +206,12 @@ if ($role === 'reseller') {
 
     </nav>
 
-    <div class="p-4 border-t border-gray-50">
+    <!-- Logout -->
+    <div class="p-4 border-t border-gray-50 flex-shrink-0">
         <a href="logout" class="nav-item hover:bg-red-50 py-3 px-4 rounded-xl text-red-500" title="Logout">
             <i class="fas fa-sign-out-alt w-6 text-center text-sm"></i>
             <span class="nav-text ml-3 text-sm font-medium">Logout</span>
         </a>
     </div>
+
 </aside>
