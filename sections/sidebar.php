@@ -143,6 +143,9 @@ if ($role === 'reseller') {
                 <i class="fas fa-code w-6 text-center text-sm"></i>
                 <span class="nav-text ml-3 text-sm font-medium">API Access</span>
             </a>
+            <div class="nav-text pt-4 pb-1 px-4">
+                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Account</p>
+            </div>
             <a href="setting" class="nav-item py-3 px-4 rounded-xl <?= isActive('setting', $current_page); ?>" title="Settings">
                 <i class="fas fa-cog w-6 text-center text-sm"></i>
                 <span class="nav-text ml-3 text-sm font-medium">Settings</span>
@@ -199,9 +202,7 @@ if ($role === 'reseller') {
         <!-- ══════════════════════════════════════════════
              ALL ROLES
         ══════════════════════════════════════════════ -->
-        <div class="nav-text pt-4 pb-1 px-4">
-            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Account</p>
-        </div>
+
 
 
 
