@@ -150,6 +150,10 @@ if ($role === 'reseller') {
                 <i class="fas fa-chart-bar w-6 text-center text-sm"></i>
                 <span class="nav-text ml-3 text-sm font-medium">Ext. Tracker</span>
             </a>
+            <a href="extension_services" class="nav-item ...">
+                <i class="fas fa-plug w-6 text-center text-sm"></i>
+                <span class="nav-text ml-3 text-sm font-medium">Ext. Services</span>
+            </a>
             <a href="setting" class="nav-item py-3 px-4 rounded-xl <?= isActive('setting', $current_page); ?>" title="Settings">
                 <i class="fas fa-cog w-6 text-center text-sm"></i>
                 <span class="nav-text ml-3 text-sm font-medium">Settings</span>
