@@ -481,7 +481,7 @@ function formatJson(id) {
 
     const val = document.getElementById(id).value;
     navigator.clipboard.writeText(val).then(() => showToast('Copied!', 'success'));
-}
+
 </script>
 
 <?php include 'sections/common_modal.php'; include 'sections/footer.php'; ?>
