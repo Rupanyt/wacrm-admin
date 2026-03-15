@@ -1,131 +1,120 @@
 <?php
-// response/gdcrm/api/auth/login.php
-require_once '../../../include/config.php'; 
+// api/auth/login/activate.php
+require_once '../../../include/config.php';
 
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Headers: Content-Type, Access-Token");
-header("Access-Control-Allow-Methods: POST, OPTIONS");
-header('Content-Type: application/json');
+header('Content-Type: application/json; charset=utf-8');
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Headers: Content-Type, Access-Token, access-token');
+header('Access-Control-Allow-Methods: POST, OPTIONS');
 
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    exit;
-}
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { exit; }
 
-// 1. Headers
-$headers = getallheaders();
-$accessToken = isset($headers['Access-Token']) ? $headers['Access-Token'] : '';
+// ── Parse JSON body ───────────────────────────────────────────
+$raw  = file_get_contents('php://input');
+$data = json_decode($raw, true);
 
-// 2. Payload reading
-$rawData = file_get_contents("php://input");
-$data = json_decode($rawData, true);
-
-// Check: Extension sends 'email' as the License Key
 if (!isset($data['email'])) {
-    echo json_encode([
-        "success" => false,
-        "message" => "License Key is missing",
-        "msg_id"  => "missing_fields"
-    ]);
+    echo json_encode(['success' => false, 'message' => 'License Key is missing.', 'msg_id' => 'missing_fields']);
     exit;
 }
 
-$license_key_input = trim($data['email']); 
+$license_key = trim($data['email']);
 
-if ($conn->connect_error) {
-    echo json_encode([
-        "success" => false,
-        "message" => "Database connection failed",
-        "msg_id"  => "db_connection_error"
-    ]);
-    exit;
+// ── Device identifier ─────────────────────────────────────────
+// Extension should send chromeStoreID in login payload.
+// Fallback: hash of User-Agent (less reliable but graceful).
+$chrome_id = trim($data['chromeStoreID'] ?? $data['device_id'] ?? '');
+if (empty($chrome_id)) {
+    $chrome_id = hash('sha256', $_SERVER['HTTP_USER_AGENT'] ?? 'unknown');
 }
 
-// FIX 1: Table mein 'status' nahi 'is_enable' column hai
-// FIX 2: bind_param mein sirf 1 variable pass hoga
-$sql = "SELECT * FROM licenses WHERE license_key = ? AND status = 'active' LIMIT 1";
-
-$stmt = $conn->prepare($sql);
-$stmt->bind_param("s", $license_key_input);
+// ── Fetch license ─────────────────────────────────────────────
+$stmt = $conn->prepare("SELECT * FROM licenses WHERE license_key = ? LIMIT 1");
+$stmt->bind_param('s', $license_key);
 $stmt->execute();
-$result = $stmt->get_result();
-
-if ($result->num_rows !== 1) {
-    echo json_encode([
-        "success" => false,
-        "message" => "Invalid or Blocked License Key",
-        "msg_id"  => "user_login_notFund"
-    ]);
-    exit;
-}
-
-$license = $result->fetch_assoc();
-
-// Expiry Check (Table column: expiry_date)
-$today = time();
-$expiry_timestamp = strtotime($license['expiry_date']);
-
-if ($license['expiry_date'] !== NULL && $expiry_timestamp < $today) {
-    echo json_encode([
-        "success" => false,
-        "message" => "This license has expired",
-        "msg_id"  => "plan_expired"
-    ]);
-    exit;
-}
-
-// ========================================================
-// ✅ 10-TIME LOGIN FEATURE (Logic using 'device_id' as counter)
-// ========================================================
-// Note: Aapke SQL schema mein device_id text column hai
-$current_counter = trim($license['device_id']);
-$new_count = 0;
-
-if ($current_counter === "" || $current_counter === NULL) {
-    $new_count = 9; // Pehla login (10 logins allowed, 1st used)
-} else {
-    $new_count = intval($current_counter) - 1;
-}
-
-if ($new_count < 0) {
-    echo json_encode([
-        "success" => false,
-        "message" => "Login limit exceeded! Maximum 10 logins allowed.",
-        "msg_id"  => "limit_exceeded"
-    ]);
-    exit;
-}
-
-// Database Update
-$updateStmt = $conn->prepare("UPDATE licenses SET device_id = ? WHERE id = ?");
-$update_val = (string)$new_count;
-$updateStmt->bind_param("si", $update_val, $license['id']);
-$updateStmt->execute();
-$updateStmt->close();
-// ========================================================
-
-// Tokens Generation
-$bearer_token = bin2hex(random_bytes(32)); 
-$plugin_token = "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9." . base64_encode(json_encode(['sub' => $license['id'], 'iat' => time()])) . ".dummy_sig";
-
-$response = [
-    "success" => true,
-    "message" => "Seja bem-vindo de volta, " . ($license['client_name'] ?? 'User') . "!",
-    "msg_id"  => "successfully_login",
-    "user"    => [
-        "user_id"             => (string)$license['id'],
-        "email"               => $license['client_email'] ?? 'user@gmail.com',
-        "name"                => $license['client_name'] ?? "User",
-        "access_token_plugin" => $plugin_token,
-        "bearer_token"        => $bearer_token,
-        "device_id"           => (string)$new_count, 
-        "user_premium"        => true,
-        "wl_id"               => null
-    ],
-    "user_status" => "active"
-];
-
-echo json_encode($response, JSON_PRETTY_PRINT);
+$license = $stmt->get_result()->fetch_assoc();
 $stmt->close();
+
+if (!$license) {
+    echo json_encode(['success' => false, 'message' => 'Invalid License Key.', 'msg_id' => 'user_login_notFund']);
+    exit;
+}
+
+if ($license['status'] === 'blocked') {
+    echo json_encode(['success' => false, 'message' => 'This license has been blocked.', 'msg_id' => 'license_blocked']);
+    exit;
+}
+
+// ── Expiry check ──────────────────────────────────────────────
+if (!empty($license['expiry_date']) && strtotime($license['expiry_date']) < time()) {
+    // Auto-update status
+    $conn->query("UPDATE licenses SET status='expired' WHERE id=" . intval($license['id']));
+    echo json_encode(['success' => false, 'message' => 'This license has expired.', 'msg_id' => 'plan_expired']);
+    exit;
+}
+
+if ($license['status'] !== 'active') {
+    echo json_encode(['success' => false, 'message' => 'License is not active.', 'msg_id' => 'license_inactive']);
+    exit;
+}
+
+// ── Device strict mode check ──────────────────────────────────
+$strict_mode    = get_config('ext_device_strict_mode') ?: '0';
+$bound_device   = trim($license['device_id'] ?? '');     // stored chromeStoreID
+$stored_token   = trim($license['filed_1']   ?? '');     // stored access_token_plugin
+
+if ($strict_mode === '1') {
+    // Device is already bound to a DIFFERENT device
+    if (!empty($bound_device) && $bound_device !== $chrome_id) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'This license is already in use on another device. Please contact support to switch devices.',
+            'msg_id'  => 'device_mismatch',
+        ]);
+        exit;
+    }
+}
+
+// ── Generate tokens ───────────────────────────────────────────
+$bearer_token = bin2hex(random_bytes(32));
+$plugin_token = 'eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.'
+              . rtrim(base64_encode(json_encode(['sub' => $license['id'], 'iat' => time(), 'dev' => substr($chrome_id, 0, 16)])), '=')
+              . '.gdcrm_sig';
+
+// ── Bind device + store session token ────────────────────────
+// device_id  → chrome extension ID (device lock)
+// filed_1    → access_token_plugin (session validation)
+// filed_2    → last login timestamp
+$login_time = date('Y-m-d H:i:s');
+$upd = $conn->prepare("UPDATE licenses SET device_id = ?, filed_1 = ?, filed_2 = ? WHERE id = ?");
+$upd->bind_param('sssi', $chrome_id, $plugin_token, $login_time, $license['id']);
+$upd->execute();
+$upd->close();
+
+// ── Respond ───────────────────────────────────────────────────
+$wl_id = get_config('ext_wl_id') ?: 'gdcrm';
+
+echo json_encode([
+    'success' => true,
+    'message' => 'Seja bem-vindo de volta, ' . ($license['client_name'] ?? 'User') . '!',
+    'msg_id'  => 'successfully_login',
+    'user'    => [
+        'user_id'             => (string)$license['id'],
+        'email'               => $license['client_email'] ?? '',
+        'name'                => $license['client_name']  ?? 'User',
+        'access_token_plugin' => $plugin_token,
+        'bearer_token'        => $bearer_token,
+        'device_id'           => $chrome_id,
+        'user_premium'        => true,
+        'wl_id'               => $wl_id,
+        'user_status'         => 'premium',
+        'dataCadastro'        => date('c', strtotime($license['created_at'] ?? 'now')),
+        'whatsapp_registro'   => $license['client_mobile'] ?? '',
+    ],
+    'user_status' => 'active',
+    'auth_google' => false,
+], JSON_PRETTY_PRINT);
+
 $conn->close();
 exit;
 ?>
