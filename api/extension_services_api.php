@@ -21,11 +21,34 @@ if ($action === 'save_services_config') {
         'ext_support_premium',
         'ext_support_free',
         'ext_phone_lookup_enabled',
+        // Social
+        'ext_youtube_url',
+        'ext_instagram_url',
+        'ext_facebook_url',
+        'ext_telegram_url',
+        'ext_tiktok_url',
+        'ext_twitter_url',
+        // JSON blocks (initial-data endpoint)
+        'ext_webhooks_json',
+        'ext_meet_json',
+        'ext_migration_json',
     ];
 
     // Validate crypt key not empty
     if (empty(trim($_POST['services_cript_key'] ?? ''))) {
         echo json_encode(['status'=>'error','message'=>'Crypt Key cannot be empty.']); exit;
+    }
+
+    // Validate JSON fields
+    $json_fields = ['ext_webhooks_json', 'ext_meet_json', 'ext_migration_json'];
+    foreach ($json_fields as $jf) {
+        $val = trim($_POST[$jf] ?? '');
+        if (!empty($val)) {
+            json_decode($val);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                echo json_encode(['status'=>'error','message'=>"Invalid JSON in field: $jf"]); exit;
+            }
+        }
     }
 
     foreach ($fields as $field) {
