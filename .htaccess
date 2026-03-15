@@ -2,6 +2,9 @@ RewriteEngine On
 
 # --- ADD THESE RULES before the generic .php rewrite ---
 
+# Extension: validation with chromeStoreID path segment
+RewriteRule ^api/auth/validation/([a-zA-Z0-9_-]+)/?$ api/auth/validation.php?chrome_id=$1 [L,QSA]
+
 # Extension: initial-data with chromeStoreID path segment
 RewriteRule ^api/services/initial-data/([a-zA-Z0-9_-]+)/?$ api/services/initial-data.php?chrome_id=$1 [L,QSA]
 
