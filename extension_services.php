@@ -215,6 +215,90 @@ $expiring_soon    = $conn->query("SELECT COUNT(*) FROM licenses WHERE status='ac
             </label>
         </div>
 
+        <!-- Social Networks -->
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <div class="flex items-center gap-3 mb-5">
+                <div class="w-9 h-9 bg-pink-50 text-pink-500 rounded-xl flex items-center justify-center text-sm"><i class="fas fa-share-alt"></i></div>
+                <div>
+                    <h3 class="font-bold text-gray-700 text-sm">Social Networks</h3>
+                    <p class="text-[11px] text-gray-400">Returned under <code class="font-mono bg-gray-100 px-1 rounded">urls.redes_sociais</code> in initial-data</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <?php
+                $socials = [
+                    ['ext_youtube_url',   'YouTube',   'fab fa-youtube',   'red'],
+                    ['ext_instagram_url', 'Instagram', 'fab fa-instagram',  'pink'],
+                    ['ext_facebook_url',  'Facebook',  'fab fa-facebook',   'blue'],
+                    ['ext_telegram_url',  'Telegram',  'fab fa-telegram',   'sky'],
+                    ['ext_tiktok_url',    'TikTok',    'fab fa-tiktok',     'gray'],
+                    ['ext_twitter_url',   'Twitter/X', 'fab fa-x-twitter',  'gray'],
+                ];
+                foreach ($socials as [$key, $label, $icon, $c]):
+                ?>
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-1.5">
+                        <i class="<?= $icon ?> text-<?= $c ?>-400 mr-1"></i><?= $label ?>
+                    </label>
+                    <input type="url" id="<?= $key ?>" value="<?= htmlspecialchars($cfg[$key] ?? '') ?>"
+                           placeholder="https://..."
+                           class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-indigo-400 bg-gray-50 focus:bg-white transition-all">
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+
+        <!-- Webhooks JSON -->
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-orange-50 text-orange-500 rounded-xl flex items-center justify-center text-sm"><i class="fas fa-bell"></i></div>
+                    <div>
+                        <h3 class="font-bold text-gray-700 text-sm">Webhooks</h3>
+                        <p class="text-[11px] text-gray-400">JSON array — returned as <code class="font-mono bg-gray-100 px-1 rounded">webhooks</code></p>
+                    </div>
+                </div>
+                <button onclick="formatJson('ext_webhooks_json')" class="text-[11px] px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-all font-mono">Format</button>
+            </div>
+            <textarea id="ext_webhooks_json" rows="4"
+                      placeholder='[{"name":"lead","url":"https://...","active":true}]'
+                      class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-xs font-mono focus:outline-none focus:border-indigo-400 bg-gray-50 focus:bg-white transition-all resize-none"><?= htmlspecialchars($cfg['ext_webhooks_json'] ?? '[]') ?></textarea>
+        </div>
+
+        <!-- Meet JSON -->
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-teal-50 text-teal-500 rounded-xl flex items-center justify-center text-sm"><i class="fas fa-video"></i></div>
+                    <div>
+                        <h3 class="font-bold text-gray-700 text-sm">Meet Config</h3>
+                        <p class="text-[11px] text-gray-400">JSON object — returned as <code class="font-mono bg-gray-100 px-1 rounded">meet</code></p>
+                    </div>
+                </div>
+                <button onclick="formatJson('ext_meet_json')" class="text-[11px] px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-all font-mono">Format</button>
+            </div>
+            <textarea id="ext_meet_json" rows="3"
+                      placeholder='{"enabled":false,"provider":"google","link":""}'
+                      class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-xs font-mono focus:outline-none focus:border-indigo-400 bg-gray-50 focus:bg-white transition-all resize-none"><?= htmlspecialchars($cfg['ext_meet_json'] ?? '{}') ?></textarea>
+        </div>
+
+        <!-- Migration JSON -->
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-yellow-50 text-yellow-500 rounded-xl flex items-center justify-center text-sm"><i class="fas fa-exchange-alt"></i></div>
+                    <div>
+                        <h3 class="font-bold text-gray-700 text-sm">Migration</h3>
+                        <p class="text-[11px] text-gray-400">JSON object — returned as <code class="font-mono bg-gray-100 px-1 rounded">migration</code></p>
+                    </div>
+                </div>
+                <button onclick="formatJson('ext_migration_json')" class="text-[11px] px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-all font-mono">Format</button>
+            </div>
+            <textarea id="ext_migration_json" rows="3"
+                      placeholder='{"enabled":false,"version":"","notice":""}'
+                      class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-xs font-mono focus:outline-none focus:border-indigo-400 bg-gray-50 focus:bg-white transition-all resize-none"><?= htmlspecialchars($cfg['ext_migration_json'] ?? '{}') ?></textarea>
+        </div>
+
         <button onclick="saveServicesConfig()"
                 class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm">
             <i class="fas fa-save"></i> Save Extension Services Config
@@ -328,6 +412,17 @@ function saveServicesConfig() {
         ext_support_premium:       document.getElementById('ext_support_premium').value.trim(),
         ext_support_free:          document.getElementById('ext_support_free').value.trim(),
         ext_phone_lookup_enabled:  document.getElementById('ext_phone_lookup_enabled').checked ? '1' : '0',
+        // Social
+        ext_youtube_url:           document.getElementById('ext_youtube_url').value.trim(),
+        ext_instagram_url:         document.getElementById('ext_instagram_url').value.trim(),
+        ext_facebook_url:          document.getElementById('ext_facebook_url').value.trim(),
+        ext_telegram_url:          document.getElementById('ext_telegram_url').value.trim(),
+        ext_tiktok_url:            document.getElementById('ext_tiktok_url').value.trim(),
+        ext_twitter_url:           document.getElementById('ext_twitter_url').value.trim(),
+        // JSON blocks
+        ext_webhooks_json:         document.getElementById('ext_webhooks_json').value.trim(),
+        ext_meet_json:             document.getElementById('ext_meet_json').value.trim(),
+        ext_migration_json:        document.getElementById('ext_migration_json').value.trim(),
     };
 
     $.post('api/extension_services_api.php', data, function(res) {
@@ -373,7 +468,17 @@ function testEndpoint() {
     });
 }
 
-function copyToClipboard(id) {
+function formatJson(id) {
+    const el = document.getElementById(id);
+    try {
+        el.value = JSON.stringify(JSON.parse(el.value), null, 2);
+        el.classList.remove('border-red-300');
+    } catch(e) {
+        el.classList.add('border-red-300');
+        showToast('Invalid JSON in ' + id, 'error');
+    }
+}
+
     const val = document.getElementById(id).value;
     navigator.clipboard.writeText(val).then(() => showToast('Copied!', 'success'));
 }
