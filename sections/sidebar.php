@@ -87,24 +87,11 @@ if ($role === 'reseller') {
                 <span class="nav-text ml-3 text-sm font-medium">Manage Admins</span>
             </a>
 
-        <?php endif; ?>
-
-        <!-- ══════════════════════════════════════════════
-             ADMIN + SUPER ADMIN
-        ══════════════════════════════════════════════ -->
-        <?php if (in_array($role, ['super_admin', 'admin'])): ?>
-
-            <a href="resellers" class="nav-item py-3 px-4 rounded-xl <?= isActive('resellers', $current_page); ?>" title="Manage Resellers">
-                <i class="fas fa-users w-6 text-center text-sm"></i>
-                <span class="nav-text ml-3 text-sm font-medium">Manage Resellers</span>
-            </a>
-
-            <a href="licenses" class="nav-item py-3 px-4 rounded-xl <?= isActive('licenses', $current_page); ?>" title="Licenses">
-                <i class="fas fa-key w-6 text-center text-sm"></i>
-                <span class="nav-text ml-3 text-sm font-medium">Licenses</span>
-            </a>
-
-            <!-- Billing -->
+        <a href="announcements" class="nav-item py-3 px-4 rounded-xl <?= isActive('admins', $current_page); ?>" title="Manage Announcements">
+            <i class="fas fa-bullhorn w-6 text-center text-sm"></i>
+            <span class="nav-text ml-3 text-sm font-medium">Announcements</span>
+        </a>
+        <!-- Billing -->
             <div class="nav-text pt-4 pb-1 px-4">
                 <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Billing</p>
             </div>
@@ -140,6 +127,24 @@ if ($role === 'reseller') {
                             <i class="fas fa-plug w-6 text-center text-sm"></i>
                             <span class="nav-text ml-3 text-sm font-medium">Ext. Services</span>
                         </a>
+        <?php endif; ?>
+
+        <!-- ══════════════════════════════════════════════
+             ADMIN + SUPER ADMIN
+        ══════════════════════════════════════════════ -->
+        <?php if (in_array($role, ['super_admin', 'admin'])): ?>
+
+            <a href="resellers" class="nav-item py-3 px-4 rounded-xl <?= isActive('resellers', $current_page); ?>" title="Manage Resellers">
+                <i class="fas fa-users w-6 text-center text-sm"></i>
+                <span class="nav-text ml-3 text-sm font-medium">Manage Resellers</span>
+            </a>
+
+            <a href="licenses" class="nav-item py-3 px-4 rounded-xl <?= isActive('licenses', $current_page); ?>" title="Licenses">
+                <i class="fas fa-key w-6 text-center text-sm"></i>
+                <span class="nav-text ml-3 text-sm font-medium">Licenses</span>
+            </a>
+
+            
             <!-- Developer -->
             <div class="nav-text pt-4 pb-1 px-4">
                 <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Developer</p>
@@ -149,6 +154,7 @@ if ($role === 'reseller') {
                 <i class="fas fa-code w-6 text-center text-sm"></i>
                 <span class="nav-text ml-3 text-sm font-medium">API Access</span>
             </a>
+        <?php if (in_array($role, ['super_admin'])): ?>
             <div class="nav-text pt-4 pb-1 px-4">
                 <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Account</p>
             </div>
@@ -161,6 +167,7 @@ if ($role === 'reseller') {
                 <i class="fas fa-cog w-6 text-center text-sm"></i>
                 <span class="nav-text ml-3 text-sm font-medium">Settings</span>
             </a>
+         <?php endif; ?>
         <?php endif; ?>
 
         <!-- ══════════════════════════════════════════════
