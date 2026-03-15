@@ -1,20 +1,21 @@
 RewriteEngine On
 
-# --- ADD THESE RULES before the generic .php rewrite ---
+# ── Extension: Announcement GET endpoint ─────────────────────
+RewriteRule ^api/notify/get/(premium|free)/([a-zA-Z0-9_-]+)/?$ api/notify/get.php?user_type=$1&chrome_id=$2 [L,QSA]
 
-# Extension: validation with chromeStoreID path segment
+# ── Extension: Auth / Validation ─────────────────────────────
 RewriteRule ^api/auth/validation/([a-zA-Z0-9_-]+)/?$ api/auth/validation.php?chrome_id=$1 [L,QSA]
 
-# Extension: initial-data with chromeStoreID path segment
+# ── Extension: initial-data ───────────────────────────────────
 RewriteRule ^api/services/initial-data/([a-zA-Z0-9_-]+)/?$ api/services/initial-data.php?chrome_id=$1 [L,QSA]
 
-# Extension tracker routes (from previous session - include if not already added)
+# ── Extension: tracker routes ────────────────────────────────
 RewriteRule ^api/urls/install/([a-zA-Z0-9_-]+)/?$   api/urls/handler.php?action=install&ext_id=$1   [L,QSA]
 RewriteRule ^api/urls/uninstall/([a-zA-Z0-9_-]+)/?$ api/urls/handler.php?action=uninstall&ext_id=$1 [L,QSA]
 RewriteRule ^api/urls/notes/([a-zA-Z0-9_-]+)/?$     api/urls/handler.php?action=notes&ext_id=$1     [L,QSA]
 RewriteRule ^extend/domSelector\.json$               extend/domSelector.php                          [L,QSA]
 
-# --- Original rule (keep at bottom) ---
+# ── Generic .php extension map (keep last) ───────────────────
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule ^(.+)$ $1.php [L]
