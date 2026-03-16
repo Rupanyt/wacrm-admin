@@ -1,4 +1,4 @@
-# GD License Manager — Reseller Plan & Billing Add-On
+# License Manager — Reseller Plan & Billing Add-On
 ## Complete Integration Guide
 
 ---
